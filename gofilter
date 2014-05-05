@@ -1,0 +1,45 @@
+#!/usr/bin/python
+
+
+from sys import argv
+from subprocess import call
+from os import path
+from shutil import move
+
+completedir = path.join('/user','e10003','stagearea','complete')
+
+if len(argv) < 3:
+	print """\
+Usage: ./gofilter proto path 
+
+    uri - either file:// or tcp://
+
+    path - either run number if file:// proto or hostname/ringname
+
+EXAMPLES
+    ./gofilter file:// 100 
+
+    ./gofilter tcp:// hostname/ringname
+"""
+	exit(1)
+
+def getRunPath(num):
+	tail = 'run-{:04d}-00.evt'.format(int(num))
+	runname = path.join(completedir,tail)
+	return runname
+
+def getResultPath(num):
+	tail = 'run-{:04d}-00-analyzed.evt'.format(int(num))
+	runname = path.join(completedir,tail)
+	return runname
+
+if argv[1] == 'file://':
+	runpath = getRunPath(argv[2])
+	cmd = './UserFilter --source={}{} --sink=file:///dev/null --oneshot'.format(argv[1],runpath)
+else :
+	cmd = './UserFilter --source={}{} --sink=file:///dev/null --oneshot'.format(argv[1],argv[2])
+
+print cmd
+call(cmd,shell=True)
+
+move('analyzer.root', getResultPath(argv[1]))
