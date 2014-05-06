@@ -92,9 +92,12 @@ Analyzer::~Analyzer()
   hmult2d->Write();
   htdiffmult->Write();
 
-  for (unsigned int i=0; i<htdiffevolve.size(); ++i) {
+  unsigned int size = htdiffevolve.size();
+  for (unsigned int i=0; i<size; ++i) {
+    std::cout << "\nWriting " << htdiffevolve.at(i)->GetName() << std::flush;
     htdiffevolve.at(i)->Write();
   }
+  std::cout << std::endl;
 
   grtstamp->Write("grtstamp");
   f.Close();
@@ -107,7 +110,9 @@ Analyzer::~Analyzer()
   delete htdiffmult;
 
   for (unsigned int i=0; i<htdiffevolve.size(); ++i) {
-    delete htdiffevolve.at(i);
+    if (htdiffevolve.at(i)!=0) {
+      delete htdiffevolve.at(i);
+    }
   }
 
   delete grtstamp;
@@ -210,18 +215,21 @@ TString Analyzer::formNewName(TString hname)
 
 TH2* Analyzer::createNewerHist(TH2* oldhist)
 {
+  TAxis* ax = oldhist->GetXaxis();
   TAxis* ay = oldhist->GetYaxis();
   double yhi = ay->GetXmax();
   double yrange = yhi - ay->GetXmin();
   int nbins = ay->GetNbins();
 
   // Create the new hist and clear all of its bin contents and info
-  TH2* hnew = dynamic_cast<TH2*>(oldhist->Clone(formNewName(oldhist->GetName())));
+  TH2* hnew = new TH2D(formNewName(oldhist->GetName()).Data(),
+                      "Evolution of S800-DDAS Tstamp ;Time Difference (ticks) ;Time (sec) ;Counts", 
+                      ax->GetNbins(), ax->GetXmin(), ax->GetXmax(),
+                      nbins, yhi, yhi+yrange);
   setBinContents(hnew,0); 
   hnew->Reset("ICESM");
+  hnew->SetDirectory(0);
   
-  // Update the y-axis range
-  hnew->GetYaxis()->Set(nbins, yhi, yhi+yrange);
 
   return hnew;
 }
