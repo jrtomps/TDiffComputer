@@ -1,11 +1,17 @@
 
 #include "FragmentIndex.h"
 #include "Analyzer.h"
+
+#include <iostream>
 #include <string>
+
 #include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TGraph.h>
+#include <TAxis.h>
+#include <TObjString.h>
+#include <TObjArray.h>
 
 // Instantiate the beast
 Analyzer gAnalyzer;
@@ -22,47 +28,52 @@ Analyzer::Analyzer()
   hddasevolve(new TH1D("hddasevolve","DDAS Counts per Time ;Time (s) ;Counts", 7200, 0, 7200)),
   hmult2d(new TH2D("hmult2d","Decomposed Multiplicity ;S800 Multiplicity ;DDAS Multiplicity ;Counts", 5,-0.5,4.5, 5,-0.5,4.5)),
   htdiffmult(new TH2D("htdiffmult","Multiplicity vs. S800-DDAS Tstamp ;Time Difference (ticks) ;Multiplicity ;Counts", 2000,-1000,1000, 5,-0.5,4.5)),
-  htdiffevolve(new TH2D("htdiffevolve","Evolution of S800-DDAS Tstamp ;Time Difference (ticks) ;Time (sec) ;Counts", 2000,-1000,1000, 1800, 0, 7200 )),
+  htdiffevolve(),
   grtstamp(new TGraph(10000)),
   npoint(0)
 {
+  htdiffevolve.push_back(new TH2D("htdiffevolve_0",
+                                  "Evolution of S800-DDAS Tstamp ;Time Difference (ticks) ;Time (sec) ;Counts", 
+                                  2000,-1000,1000, 1800, 0, 7200 )
+                        );
+
   htdiff->SetDirectory(0);
   hmult->SetDirectory(0);
   hs800evolve->SetDirectory(0);
   hddasevolve->SetDirectory(0);
   hmult2d->SetDirectory(0);
   htdiffmult->SetDirectory(0);
-  htdiffevolve->SetDirectory(0);
+  htdiffevolve.back()->SetDirectory(0);
 }
 
-Analyzer::Analyzer(const Analyzer& rhs) 
-{
-//  std::string hname = rhs.htdiff->GetName();
-//  htdiff = dynamic_cast<TH1*>(rhs.htdiff->Clone((hname + "c").c_str()));
-//  htdiff->SetDirectory(0);
-//
-//  hname = rhs.hmult->GetName();
-//  hmult = dynamic_cast<TH1*>(rhs.hmult->Clone((hname + "c").c_str()));
-//  hmult->SetDirectory(0);
-//
-//  hname = rhs.hmult2d->GetName();
-//  hmult2d = dynamic_cast<TH1*>(rhs.hmult2d->Clone((hname + "c").c_str()));
-//  hmult2d->SetDirectory(0);
-//
-//  hname = rhs.htdiffmult->GetName();
-//  htdiffmult = dynamic_cast<TH2*>(rhs.htdiffmult->Clone((hname + "c").c_str()));
-//  htdiffmult->SetDirectory(0);
-//
-//  hname = rhs.htdiffevolve->GetName();
-//  htdiffevolve = dynamic_cast<TH2*>(rhs.htdiffevolve->Clone((hname + "c").c_str()));
-//  htdiffevolve->SetDirectory(0);
-  clone (rhs.htdiff, htdiff);
-  clone (rhs.hmult, hmult);
-  clone (rhs.hs800evolve, hs800evolve);
-  clone (rhs.hmult2d, hmult2d);
-  clone (rhs.htdiffmult, htdiffmult);
-  clone (rhs.htdiffevolve, htdiffevolve);
-}
+//Analyzer::Analyzer(const Analyzer& rhs) 
+//{
+////  std::string hname = rhs.htdiff->GetName();
+////  htdiff = dynamic_cast<TH1*>(rhs.htdiff->Clone((hname + "c").c_str()));
+////  htdiff->SetDirectory(0);
+////
+////  hname = rhs.hmult->GetName();
+////  hmult = dynamic_cast<TH1*>(rhs.hmult->Clone((hname + "c").c_str()));
+////  hmult->SetDirectory(0);
+////
+////  hname = rhs.hmult2d->GetName();
+////  hmult2d = dynamic_cast<TH1*>(rhs.hmult2d->Clone((hname + "c").c_str()));
+////  hmult2d->SetDirectory(0);
+////
+////  hname = rhs.htdiffmult->GetName();
+////  htdiffmult = dynamic_cast<TH2*>(rhs.htdiffmult->Clone((hname + "c").c_str()));
+////  htdiffmult->SetDirectory(0);
+////
+////  hname = rhs.htdiffevolve->GetName();
+////  htdiffevolve = dynamic_cast<TH2*>(rhs.htdiffevolve->Clone((hname + "c").c_str()));
+////  htdiffevolve->SetDirectory(0);
+//  clone (rhs.htdiff, htdiff);
+//  clone (rhs.hmult, hmult);
+//  clone (rhs.hs800evolve, hs800evolve);
+//  clone (rhs.hmult2d, hmult2d);
+//  clone (rhs.htdiffmult, htdiffmult);
+//  clone (rhs.htdiffevolve, htdiffevolve);
+//}
 
 template<class T> void Analyzer::clone(T h1, T h2)
 {
@@ -80,7 +91,11 @@ Analyzer::~Analyzer()
   hddasevolve->Write();
   hmult2d->Write();
   htdiffmult->Write();
-  htdiffevolve->Write();
+
+  for (unsigned int i=0; i<htdiffevolve.size(); ++i) {
+    htdiffevolve.at(i)->Write();
+  }
+
   grtstamp->Write("grtstamp");
   f.Close();
 
@@ -90,7 +105,11 @@ Analyzer::~Analyzer()
   delete hddasevolve;
   delete hmult2d;
   delete htdiffmult;
-  delete htdiffevolve;
+
+  for (unsigned int i=0; i<htdiffevolve.size(); ++i) {
+    delete htdiffevolve.at(i);
+  }
+
   delete grtstamp;
 }
 
@@ -136,9 +155,73 @@ void Analyzer::operator()(FragmentIndex& index)
     htdiff->Fill(diff);
     grtstamp->SetPoint(npoint, s800tstamp, ddaststamp);
     htdiffmult->Fill(diff, nfrags);
-    htdiffevolve->Fill(diff, ddaststamp*8.0e-9);
+    fillEvolving2D(htdiffevolve, diff, ddaststamp*8.0e-9);
     ++npoint;
   }
 
 }
 
+void Analyzer::fillEvolving2D(std::vector<TH2*>& hists, double diff, double tstamp)
+{
+    TH2* hcurrent = hists.back();
+  
+    if (!valueInRange(hcurrent->GetYaxis(),tstamp)) {
+      hcurrent = createNewerHist(hcurrent);
+      hists.push_back(hcurrent);
+    }
+
+    hcurrent->Fill(diff,tstamp);
+}
+
+bool Analyzer::valueInRange(TAxis* axis, double value)
+{
+   return ( value > axis->GetXmin() && value < axis->GetXmax() );
+}
+
+void Analyzer::setBinContents(TH1* h, double val)
+{
+  TAxis* ax = h->GetXaxis();
+  TAxis* ay = h->GetYaxis();
+  TAxis* az = h->GetZaxis();
+
+  for (int xbin=0; xbin<=ax->GetNbins(); ++xbin) {
+    for (int ybin=0; ybin<=ay->GetNbins(); ++ybin) {
+      for (int zbin=0; zbin<=az->GetNbins(); ++zbin) {
+        h->SetBinContent(xbin,ybin,zbin,0);
+      }
+    }
+  }
+}
+
+TString Analyzer::formNewName(TString hname)
+{
+  TObjArray* decomp = hname.Tokenize("_");
+  TString basename = hname;
+  int index=0;
+  if (decomp->GetEntries()==2) {
+    basename = (dynamic_cast<TObjString*>(decomp->At(0)))->String();
+    index = (dynamic_cast<TObjString*>(decomp->At(1)))->String().Atoi();
+  } else {
+    std::cout << "Unable to intelligently form new histo name from ";
+    std::cout << hname.Data() << std::endl;
+  }
+  return TString::Format("%s_%d",basename.Data(), index+1);
+}
+
+TH2* Analyzer::createNewerHist(TH2* oldhist)
+{
+  TAxis* ay = oldhist->GetYaxis();
+  double yhi = ay->GetXmax();
+  double yrange = yhi - ay->GetXmin();
+  int nbins = ay->GetNbins();
+
+  // Create the new hist and clear all of its bin contents and info
+  TH2* hnew = dynamic_cast<TH2*>(oldhist->Clone(formNewName(oldhist->GetName())));
+  setBinContents(hnew,0); 
+  hnew->Reset("ICESM");
+  
+  // Update the y-axis range
+  hnew->GetYaxis()->Set(nbins, yhi, yhi+yrange);
+
+  return hnew;
+}

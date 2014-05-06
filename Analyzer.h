@@ -3,10 +3,12 @@
 #define ANALYZER_H
 
 #include <stdint.h>
+#include <TString.h>
 
 class TH1;
 class TH2;
 class TGraph;
+class TAxis;
 class FragmentIndex;
 
 class Analyzer 
@@ -18,7 +20,7 @@ class Analyzer
     TH1* hs800evolve;
     TH1* hddasevolve;
     TH2* htdiffmult;
-    TH2* htdiffevolve;
+    std::vector<TH2*> htdiffevolve;
     TGraph* grtstamp;
     int npoint;
   
@@ -26,7 +28,7 @@ class Analyzer
    Analyzer();
    ~Analyzer();
 
-   Analyzer(const Analyzer& rhs);
+//   Analyzer(const Analyzer& rhs);
    void operator() (FragmentIndex& index);
 
   private:
@@ -41,6 +43,11 @@ class Analyzer
 
     template<class T> void clone(T h1, T h2);
 
+    void fillEvolving2D(std::vector<TH2*>& hists, double diff, double tstamp);
+    TH2* createNewerHist(TH2* oldhist);
+    void setBinContents(TH1* h, double val);
+    TString formNewName(TString hname);
+    bool valueInRange(TAxis* axis, double value);
 };
 
 #endif
