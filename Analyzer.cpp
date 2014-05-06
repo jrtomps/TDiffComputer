@@ -3,7 +3,7 @@
 #include "Analyzer.h"
 
 #include <iostream>
-#include <string>
+#include <iomanip>
 
 #include <TFile.h>
 #include <TH1.h>
@@ -12,6 +12,7 @@
 #include <TAxis.h>
 #include <TObjString.h>
 #include <TObjArray.h>
+#include <TString.h>
 
 // Instantiate the beast
 Analyzer gAnalyzer;
@@ -30,7 +31,8 @@ Analyzer::Analyzer()
   htdiffmult(new TH2D("htdiffmult","Multiplicity vs. S800-DDAS Tstamp ;Time Difference (ticks) ;Multiplicity ;Counts", 2000,-1000,1000, 5,-0.5,4.5)),
   htdiffevolve(),
   grtstamp(new TGraph(10000)),
-  npoint(0)
+  npoint(0),
+  nevent(0)
 {
   htdiffevolve.push_back(new TH2D("htdiffevolve_0",
                                   "Evolution of S800-DDAS Tstamp ;Time Difference (ticks) ;Time (sec) ;Counts", 
@@ -120,6 +122,9 @@ Analyzer::~Analyzer()
 
 void Analyzer::operator()(FragmentIndex& index)
 {
+
+  ++nevent;
+
   bool foundS800 = false;
   bool foundDDAS = false;
   double s800tstamp = 0;
@@ -162,6 +167,12 @@ void Analyzer::operator()(FragmentIndex& index)
     htdiffmult->Fill(diff, nfrags);
     fillEvolving2D(htdiffevolve, diff, ddaststamp*8.0e-9);
     ++npoint;
+  } else {
+    std::cout.flags(std::ios::fixed);
+    std::cout.precision(0);
+    std::cout << "\nFound an unbuilt event! (evt# " << nevent << ")";
+    std::cout << " s800tstamp=" << std::setw(10) << s800tstamp;
+    std::cout << " ddaststamp=" << std::setw(10) << ddaststamp;
   }
 
 }
@@ -198,9 +209,9 @@ void Analyzer::setBinContents(TH1* h, double val)
   }
 }
 
-TString Analyzer::formNewName(TString hname)
+std::string Analyzer::formNewName(std::string hname)
 {
-  TObjArray* decomp = hname.Tokenize("_");
+  TObjArray* decomp = TString(hname).Tokenize("_");
   TString basename = hname;
   int index=0;
   if (decomp->GetEntries()==2) {
@@ -208,9 +219,9 @@ TString Analyzer::formNewName(TString hname)
     index = (dynamic_cast<TObjString*>(decomp->At(1)))->String().Atoi();
   } else {
     std::cout << "Unable to intelligently form new histo name from ";
-    std::cout << hname.Data() << std::endl;
+    std::cout << hname << std::endl;
   }
-  return TString::Format("%s_%d",basename.Data(), index+1);
+  return std::string(TString::Format("%s_%d",basename.Data(), index+1).Data());
 }
 
 TH2* Analyzer::createNewerHist(TH2* oldhist)
@@ -222,7 +233,7 @@ TH2* Analyzer::createNewerHist(TH2* oldhist)
   int nbins = ay->GetNbins();
 
   // Create the new hist and clear all of its bin contents and info
-  TH2* hnew = new TH2D(formNewName(oldhist->GetName()).Data(),
+  TH2* hnew = new TH2D(formNewName(oldhist->GetName()).c_str(),
                       "Evolution of S800-DDAS Tstamp ;Time Difference (ticks) ;Time (sec) ;Counts", 
                       ax->GetNbins(), ax->GetXmin(), ax->GetXmax(),
                       nbins, yhi, yhi+yrange);

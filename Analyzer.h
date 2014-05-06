@@ -3,7 +3,7 @@
 #define ANALYZER_H
 
 #include <stdint.h>
-#include <TString.h>
+#include <string>
 
 class TH1;
 class TH2;
@@ -23,7 +23,9 @@ class Analyzer
     std::vector<TH2*> htdiffevolve;
     TGraph* grtstamp;
     int npoint;
-  
+
+    int nevent;  
+
   public:
    Analyzer();
    ~Analyzer();
@@ -46,7 +48,7 @@ class Analyzer
     void fillEvolving2D(std::vector<TH2*>& hists, double diff, double tstamp);
     TH2* createNewerHist(TH2* oldhist);
     void setBinContents(TH1* h, double val);
-    TString formNewName(TString hname);
+    std::string formNewName(std::string hname);
     bool valueInRange(TAxis* axis, double value);
 };
 
