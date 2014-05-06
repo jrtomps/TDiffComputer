@@ -21,6 +21,7 @@ static const char* Copyright = "(C) Copyright Michigan State University 2014, Al
 #include "CCompositeFilter.h"
 #include "CMediator.h"
 #include "CDataSourceFactory.h"
+#include "CStdinDataSource.h"
 #include "CDataSinkFactory.h"
 #include <string>
 #include <DataFormat.h>
@@ -126,7 +127,11 @@ CDataSource* CFilterMain::constructDataSource()
   std::vector<uint16_t> exclude = constructExcludesList();
   
   CDataSource* source=0;
-  return CDataSourceFactory().makeSource(source_name,sample,exclude);
+  if (source_name == "-") {
+    return new CStdinDataSource(STDIN_FILENO,exclude);
+  } else {
+    return CDataSourceFactory().makeSource(source_name,sample,exclude);
+  }
 }
 
 /**! Set up the data sink

@@ -35,7 +35,8 @@ headers := CFileDataSink.h \
   		CCompositeFilter.h \
 			FragmentIndex.h \
 			CTemplateFilter.h \
-			filterargs.h
+			filterargs.h \
+			CStdinDataSource.h
 
 objs    := $(patsubst %.h, %.o, $(headers))
 
