@@ -36,7 +36,7 @@ Analyzer::Analyzer()
 {
   htdiffevolve.push_back(new TH2D("htdiffevolve_0",
                                   "Evolution of S800-DDAS Tstamp ;Time Difference (ticks) ;Time (sec) ;Counts", 
-                                  2000,-1000,1000, 1800, 0, 7200 )
+                                  3000,-3000,3000, 1800, 0, 7200 )
                         );
 
   htdiff->SetDirectory(0);
