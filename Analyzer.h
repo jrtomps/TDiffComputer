@@ -15,6 +15,7 @@ class Analyzer
 {
   private:
     TH1* htdiff;
+    TH1* htdiff_mult10;
     TH1* hmult;
     TH1* hmult2d;
     TH1* hs800evolve;

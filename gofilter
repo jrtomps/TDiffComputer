@@ -30,7 +30,7 @@ def getRunPath(num):
 
 def getResultPath(num):
 	tail = 'run-{:04d}-00-analyzed.evt'.format(int(num))
-	runname = path.join(completedir,tail)
+	runname = tail
 	return runname
 
 if argv[1] == 'file://':
@@ -42,4 +42,4 @@ else :
 print cmd
 call(cmd,shell=True)
 
-move('analyzer.root', getResultPath(argv[1]))
+move('analyzer.root', getResultPath(argv[2]))

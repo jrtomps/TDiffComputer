@@ -24,11 +24,12 @@ namespace MergedInfo {
 
 Analyzer::Analyzer()
   : htdiff(new TH1D("htdiff","S800 - DDAS Timestamp ;Time Difference (ticks) ;Counts", 2000,-1000,1000)),
+  htdiff_mult10(new TH1D("htdiff_mult10","S800 - DDAS Timestamp (DDAS mult=10);Time Difference (ticks) ;Counts", 2000,-1000,1000)),
   hmult(new TH1D("hmult","Multiplicity ;Multiplicity ;Counts", 5, -0.5, 4.5)),
   hs800evolve(new TH1D("hs800evolve","S800 Counts per Time ;Time (s) ;Counts", 7200, 0, 7200)),
   hddasevolve(new TH1D("hddasevolve","DDAS Counts per Time ;Time (s) ;Counts", 7200, 0, 7200)),
-  hmult2d(new TH2D("hmult2d","Decomposed Multiplicity ;S800 Multiplicity ;DDAS Multiplicity ;Counts", 5,-0.5,4.5, 5,-0.5,4.5)),
-  htdiffmult(new TH2D("htdiffmult","Multiplicity vs. S800-DDAS Tstamp ;Time Difference (ticks) ;Multiplicity ;Counts", 2000,-1000,1000, 5,-0.5,4.5)),
+  hmult2d(new TH2D("hmult2d","Decomposed Multiplicity ;S800 Multiplicity ;DDAS Multiplicity ;Counts", 24,-0.5,24.5, 25,-0.5,24.5)),
+  htdiffmult(new TH2D("htdiffmult","Multiplicity vs. S800-DDAS Tstamp ;Time Difference (ticks) ;Multiplicity ;Counts", 2000,-1000,1000, 25,-0.5,24.5)),
   htdiffevolve(),
   grtstamp(new TGraph(10000)),
   npoint(0),
@@ -40,6 +41,7 @@ Analyzer::Analyzer()
                         );
 
   htdiff->SetDirectory(0);
+  htdiff_mult10->SetDirectory(0);
   hmult->SetDirectory(0);
   hs800evolve->SetDirectory(0);
   hddasevolve->SetDirectory(0);
@@ -88,6 +90,7 @@ Analyzer::~Analyzer()
 {
   TFile f("analyzer.root","RECREATE");
   htdiff->Write();
+  htdiff_mult10->Write();
   hmult->Write();
   hs800evolve->Write();
   hddasevolve->Write();
@@ -105,6 +108,7 @@ Analyzer::~Analyzer()
   f.Close();
 
   delete htdiff;
+  delete htdiff_mult10;
   delete hmult;
   delete hs800evolve;
   delete hddasevolve;
@@ -163,6 +167,9 @@ void Analyzer::operator()(FragmentIndex& index)
   if (foundS800 && foundDDAS) {
     double diff = s800tstamp - ddaststamp;
     htdiff->Fill(diff);
+    if (ddascount==10) {
+      htdiff_mult10->Fill(diff);
+    }
     grtstamp->SetPoint(npoint, s800tstamp, ddaststamp);
     htdiffmult->Fill(diff, nfrags);
     fillEvolving2D(htdiffevolve, diff, ddaststamp*8.0e-9);
