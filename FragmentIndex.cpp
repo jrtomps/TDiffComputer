@@ -1,9 +1,31 @@
+//    This software is Copyright by the Board of Trustees of Michigan State
+//    University (c) Copyright 2014. 
+//
+//    This program is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    This program is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//     Author:
+//       Jeromy Tompkins
+//	     NSCL
+//	     Michigan State University
+//	     East Lansing, MI 48824-1321
 
 #include "FragmentIndex.h"
 #include <CErrnoException.h>
 #include <iostream>
 #include <iomanip>
 #include <fragment.h> 
+#include <DataFormat.h>
 
 
 FragmentIndex::FragmentIndex()
@@ -55,7 +77,14 @@ void FragmentIndex::indexFragments(uint16_t* begin, uint16_t* end)
     info.s_size = frag->s_header.s_size;
     info.s_barrier = frag->s_header.s_barrier;
     info.s_itemhdr = reinterpret_cast<uint16_t*>(frag->s_body);
-    info.s_itembody = info.s_itemhdr+4;
+    uint16_t sizeBodyHeader = *(info.s_itemhdr+4);
+    if (sizeBodyHeader==0) {
+      info.s_itembody = info.s_itemhdr
+                        + (sizeof(RingItemHeader)+6)/sizeof(uint16_t);;
+    } else {
+      info.s_itembody = info.s_itemhdr
+                        + (sizeof(RingItemHeader)+sizeBodyHeader) /sizeof(uint16_t);
+    }
 
     m_frags.push_back(info);
 
